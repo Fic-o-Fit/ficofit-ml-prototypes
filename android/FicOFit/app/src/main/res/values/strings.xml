@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Fic-o\'-Fit</string>
+    <string name="title_activity_pushup">PushupActivity</string>
+    <string name="pushup_status">pushup: %s</string>
+    <string name="FPS_status">FPS: %s</string>
+    <string name="tfe_pe_request_permission">This app needs camera permission</string>
+</resources>
