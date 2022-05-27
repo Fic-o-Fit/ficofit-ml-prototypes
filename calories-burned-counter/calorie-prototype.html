@@ -1,0 +1,35 @@
+<html>
+<head>
+    <meta charset="UTF-8">
+    <script src="./tf.min.js"></script>
+    <script src="./calories.js"></script>
+</head> 
+
+<body>
+<center>
+    <img src="kitten-bowl.png" height="200">
+    <h1 style="color:#c9103b; font-family:'Courier New';">Magical Kitten Calorie Counter by Princess Deandra</h1>
+    
+    <h3>weight (in kilograms): </h3>
+    <input type="text" id="weight" value="50">
+    <h3>reps: </h3>
+    <input type="text" id="reps" value="1">
+    <br><br>
+    <button id="count">Count Calories!!!!</button>
+    <br><br>
+    <h2 id="result" style="color:#065c2b; font-family:'Courier New';"></h2>
+</center>
+</body>
+
+<script>
+    const btn = document.getElementById('count')
+    
+    btn.addEventListener('click', function handleClick() {
+        var weight = parseFloat(document.getElementById('weight').value)
+        var reps = parseInt(document.getElementById('reps').value)
+        result = countCaloriesBurned(weight, reps)
+        document.getElementById('result').innerHTML = 'Total Calories Burned: ' + result + " cal &#128008; &#128008;"
+    })
+</script>
+</html>
+
