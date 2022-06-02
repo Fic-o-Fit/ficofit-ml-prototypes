@@ -1,16 +1,10 @@
 package com.example.fic_o_fit
 
 import android.content.Intent
-import android.content.res.AssetManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
-import android.widget.Toast
-import java.io.FileInputStream
-import java.io.IOException
-import java.nio.MappedByteBuffer
-import java.nio.channels.FileChannel
 
 class MainActivity : AppCompatActivity() {
 
@@ -18,13 +12,24 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val btnCal = findViewById(R.id.btnCal) as Button
-        btnCal.setOnClickListener {
+        val btnPushup = findViewById<Button>(R.id.btnPushup)
+        val btnSitup = findViewById<Button>(R.id.btnSitup)
+        val btnRun = findViewById<Button>(R.id.btnRun)
+
+        btnPushup.setOnClickListener {
             val intent = Intent(this, PushupActivity::class.java)
             startActivity(intent)
-            println("testestes")
-            Log.d("TEST", "testestes")
         }
+
+        btnSitup.setOnClickListener {
+            val intent = Intent(this, SitupActivity::class.java)
+            startActivity(intent)
+        }
+
+//        btnRun.setOnClickListener {
+//            val intent = Intent(this, RunnerActivity::class.java)
+//            startActivity(intent)
+//        }
 
     }
 }

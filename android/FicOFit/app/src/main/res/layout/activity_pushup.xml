@@ -14,16 +14,16 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
-        android:id="@+id/tvPushupStatus"
+        android:id="@+id/tvPushupCount"
         android:layout_width="167dp"
         android:layout_height="37dp"
         android:layout_marginStart="40dp"
-        android:layout_marginTop="64dp"
+        android:layout_marginTop="24dp"
         android:shadowColor="#CD020202"
         android:shadowDx="5"
         android:shadowDy="5"
         android:shadowRadius="10"
-        android:text="@string/pushup_status"
+        android:text="@string/pushup_count"
         android:textColor="#FFFFFF"
         android:textSize="20sp"
         app:layout_constraintStart_toStartOf="parent"
@@ -34,7 +34,7 @@
         android:layout_width="167dp"
         android:layout_height="37dp"
         android:layout_marginStart="40dp"
-        android:layout_marginTop="100dp"
+        android:layout_marginTop="60dp"
         android:shadowColor="#CD020202"
         android:shadowDx="5"
         android:shadowDy="5"

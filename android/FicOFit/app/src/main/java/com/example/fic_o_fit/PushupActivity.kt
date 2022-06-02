@@ -8,9 +8,7 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Process
 import android.view.SurfaceView
-import android.view.View
 import android.view.WindowManager
-import android.widget.ArrayAdapter
 import android.widget.TextView
 import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
@@ -19,15 +17,23 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.DialogFragment
 import com.example.fic_o_fit.camera.CameraSource
-import com.example.fic_o_fit.data.Classification
+import com.example.fic_o_fit.data.BodyPart
+import com.example.fic_o_fit.data.Pose
 import com.example.fic_o_fit.models.PoseEstimator
-import com.example.fic_o_fit.models.PushupClassifier
+import com.example.fic_o_fit.models.CalisthenicsClassifier
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
+import android.speech.tts.TextToSpeech
 
 class PushupActivity : AppCompatActivity() {
 
+    var history = mutableListOf<Int>()
+    var num_frames_requirement:Int = 5
+    var pushup_down_done: Boolean = false
+    var pushup_count: Int = 0
+
     private lateinit var surfaceView: SurfaceView
-    private lateinit var tvPushupStatus: TextView
+    private lateinit var tvPushupCount: TextView
     private lateinit var tvFPS: TextView
     private var cameraSource: CameraSource? = null
     private val requestPermissionLauncher =
@@ -48,11 +54,15 @@ class PushupActivity : AppCompatActivity() {
 
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         surfaceView = findViewById(R.id.surfaceView)
-        tvPushupStatus = findViewById(R.id.tvPushupStatus)
+        tvPushupCount = findViewById(R.id.tvPushupCount)
         tvFPS = findViewById(R.id.tvFPS)
         if (!isCameraPermissionGranted()) {
             requestPermission()
         }
+        history = mutableListOf<Int>()
+        num_frames_requirement = 5
+        pushup_down_done = false
+        pushup_count = 0
     }
 
     override fun onStart() {
@@ -79,6 +89,40 @@ class PushupActivity : AppCompatActivity() {
         ) == PackageManager.PERMISSION_GRANTED
     }
 
+    fun isIncreasing(arr: List<Int>): Boolean{
+        var true_count = 0
+        val threshold = 0.8
+        for(i in 1 until arr.size){
+            if(arr[i] > arr[i-1]){
+                true_count += 1
+            }
+        }
+        val true_percentage = true_count.toFloat() / (arr.size-1).toFloat()
+        return true_percentage >= threshold
+    }
+
+    fun isDecreasing(arr: List<Int>): Boolean{
+        var true_count = 0
+        val threshold = 0.8
+        for(i in 1 until arr.size){
+            if(arr[i] < arr[i-1]){
+                true_count += 1
+            }
+        }
+        val true_percentage = true_count.toFloat() / (arr.size-1).toFloat()
+        return true_percentage >= threshold
+    }
+
+    fun bodyIsVisible(pose: Pose): Boolean{
+        val important_bodyparts = intArrayOf(5, 7, 9, 11, 13)
+        for(i in important_bodyparts){
+            if((pose.keypoints[i].score < 0.2f) && (pose.keypoints[i+1].score < 0.2f)){
+                return false
+            }
+        }
+        return true
+    }
+
     private fun openCamera() {
         if (isCameraPermissionGranted()) {
             if (cameraSource == null) {
@@ -89,21 +133,45 @@ class PushupActivity : AppCompatActivity() {
                         }
 
                         override fun onDetectedInfo(
-                            poseClassification: Classification
+                            poseIsCorrect: Boolean,
+                            pose: Pose
                         ) {
-                            val pushupLabel = poseClassification?.id
-                            val pushupStatus = poseClassification?.title
-                            val pushupConfidence = poseClassification?.confidence
-//                            if (pushupConfidence > 0.6f){
-//                                tvPushupStatus.text = getString(R.string.pushup_status, pushupLabel)
-//                            }
-                            tvPushupStatus.text = getString(R.string.pushup_status, pushupLabel)
+                            tvPushupCount.text = getString(R.string.pushup_count, pushup_count.toString())
+                            // jika bener pushup maka...
+                            if(poseIsCorrect && bodyIsVisible(pose)){
+                                println("body is visible!! AND POSE IS CORRECT!!!")
+                                var shoulder_y = 0
+                                if(pose.keypoints[BodyPart.NOSE.position].coordinate.x > pose.keypoints[BodyPart.RIGHT_KNEE.position].coordinate.x){
+                                    shoulder_y = (pose.keypoints[BodyPart.RIGHT_SHOULDER.position].coordinate.y).toInt()
+                                }else{
+                                    shoulder_y = (pose.keypoints[BodyPart.LEFT_SHOULDER.position].coordinate.y).toInt()
+                                }
+                                println(shoulder_y)
+                                print(history.takeLast(1))
+                                if((history.size == 0) || (shoulder_y != history.takeLast(1)[0])){
+                                    history.add(shoulder_y)
+                                    history = history.takeLast(num_frames_requirement).toMutableList()
+                                    if(history.size >= num_frames_requirement){
+                                        println("calculating decrease increase")
+                                        println(isDecreasing(history))
+                                        println(isIncreasing(history))
+                                        if(isDecreasing(history)){
+                                            pushup_down_done = true
+                                        }else if(isIncreasing(history)){
+                                            if(pushup_down_done){
+                                                pushup_count += 1
+                                                pushup_down_done = false
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
 
                     }).apply {
                         prepareCamera()
                     }
-                cameraSource?.setClassifier(PushupClassifier(this.assets))
+                cameraSource?.setClassifier(CalisthenicsClassifier(this.assets, "pushup"))
                 lifecycleScope.launch(Dispatchers.Main) {
                     cameraSource?.initCamera()
                 }

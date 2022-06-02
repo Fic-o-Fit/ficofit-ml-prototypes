@@ -32,16 +32,16 @@ import android.os.HandlerThread
 import android.util.Log
 import android.view.Surface
 import android.view.SurfaceView
-import com.example.fic_o_fit.data.Classification
 import com.example.fic_o_fit.data.Pose
 import com.example.fic_o_fit.models.PoseEstimator
-import com.example.fic_o_fit.models.PushupClassifier
+import com.example.fic_o_fit.models.CalisthenicsClassifier
 import com.example.fic_o_fit.utils.VisualizationUtils
 import com.example.fic_o_fit.utils.YuvToRgbConverter
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.*
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import android.util.DisplayMetrics
 
 class CameraSource(
     private val surfaceView: SurfaceView,
@@ -57,7 +57,7 @@ class CameraSource(
 
     private val lock = Any()
     private var estimator: PoseEstimator? = null
-    private var classifier: PushupClassifier? = null
+    private var classifier: CalisthenicsClassifier? = null
     private var yuvConverter: YuvToRgbConverter = YuvToRgbConverter(surfaceView.context)
     private lateinit var imageBitmap: Bitmap
 
@@ -182,7 +182,7 @@ class CameraSource(
         }
     }
 
-    fun setClassifier(classifier: PushupClassifier?) {
+    fun setClassifier(classifier: CalisthenicsClassifier?) {
         synchronized(lock) {
             if (this.classifier != null) {
                 this.classifier?.close()
@@ -229,15 +229,15 @@ class CameraSource(
     }
 
     private fun processImage(bitmap: Bitmap) {
-        val poses = mutableListOf<Pose>()
-        var classificationResult: Classification? = null
+        val poses = mutableListOf<Pose>()  //tadinya ada opsi multipose jd pke list
+        var poseIsCorrect: Boolean = false
 
         synchronized(lock) {
             estimator?.estimatePose(bitmap)?.let {
                 poses.addAll(it)
                 if (poses.isNotEmpty()) {  //&& poses[0].score>0.6f
                     classifier?.run {
-                        classificationResult = classifyPose(poseToArray(poses[0]))
+                        poseIsCorrect = poseIsCorrect(poses[0])
                     }
                 }
             }
@@ -248,7 +248,7 @@ class CameraSource(
         }
 
         if (poses.isNotEmpty()) {  // && poses[0].score>0.6f
-            listener?.onDetectedInfo(classificationResult!!)
+            listener?.onDetectedInfo(poseIsCorrect, poses[0])
         }
         visualize(poses, bitmap)
 
@@ -293,18 +293,6 @@ class CameraSource(
         }
     }
 
-    private fun poseToArray(pose: Pose) : FloatArray{
-        var result = FloatArray(51)
-        for (keypoint in pose.keypoints) {
-            if (keypoint.score > 0.2f) {
-                var position = keypoint.bodyPart.position * 3
-                result[position] = keypoint.coordinate.x
-                result[position+1] = keypoint.coordinate.y
-                result[position+2] = keypoint.score
-            }
-        }
-        return result
-    }
 
     private fun stopImageReaderThread() {
         imageReaderThread?.quitSafely()
@@ -320,6 +308,6 @@ class CameraSource(
     interface CameraSourceListener {
         fun onFPSListener(fps: Int)
 
-        fun onDetectedInfo(poseClassification: Classification)
+        fun onDetectedInfo(poseIsCorrect:Boolean, pose:Pose)
     }
 }
