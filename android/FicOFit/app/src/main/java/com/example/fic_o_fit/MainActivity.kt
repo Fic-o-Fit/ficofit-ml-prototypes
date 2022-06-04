@@ -26,10 +26,10 @@ class MainActivity : AppCompatActivity() {
             startActivity(intent)
         }
 
-//        btnRun.setOnClickListener {
-//            val intent = Intent(this, RunnerActivity::class.java)
-//            startActivity(intent)
-//        }
+        btnRun.setOnClickListener {
+            val intent = Intent(this, EndlessRunnerActivity::class.java)
+            startActivity(intent)
+        }
 
     }
 }

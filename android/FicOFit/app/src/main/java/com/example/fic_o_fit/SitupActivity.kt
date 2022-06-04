@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.AlertDialog
 import android.app.Dialog
 import android.content.pm.PackageManager
+import android.content.res.Resources
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Process
@@ -27,10 +28,11 @@ import android.speech.tts.TextToSpeech
 
 class SitupActivity : AppCompatActivity() {
 
-    var history = mutableListOf<Int>()
-    var num_frames_requirement:Int = 5
-    var situp_down_done: Boolean = false
-    var situp_count: Int = 0
+    private var history = mutableListOf<Int>()
+    private var num_frames_requirement:Int = 5
+    private var situp_down_done: Boolean = false
+    private var situp_count: Int = 0
+    private var currentFps: Int = 20
 
     private lateinit var surfaceView: SurfaceView
     private lateinit var tvSitupCount: TextView
@@ -59,10 +61,12 @@ class SitupActivity : AppCompatActivity() {
         if (!isCameraPermissionGranted()) {
             requestPermission()
         }
+
         history = mutableListOf<Int>()
         num_frames_requirement = 5
         situp_down_done = false
         situp_count = 0
+        currentFps = 20
     }
 
     override fun onStart() {
@@ -93,7 +97,7 @@ class SitupActivity : AppCompatActivity() {
         var true_count = 0
         val threshold = 0.8
         for(i in 1 until arr.size){
-            if(arr[i] > arr[i-1]){
+            if(arr[i] < arr[i-1]){
                 true_count += 1
             }
         }
@@ -105,7 +109,7 @@ class SitupActivity : AppCompatActivity() {
         var true_count = 0
         val threshold = 0.8
         for(i in 1 until arr.size){
-            if(arr[i] < arr[i-1]){
+            if(arr[i] > arr[i-1]){
                 true_count += 1
             }
         }
@@ -129,6 +133,7 @@ class SitupActivity : AppCompatActivity() {
                 cameraSource =
                     CameraSource(surfaceView, object : CameraSource.CameraSourceListener {
                         override fun onFPSListener(fps: Int) {
+                            currentFps = fps
                             tvFPS.text = getString(R.string.FPS_status, fps.toString())
                         }
 
@@ -149,6 +154,7 @@ class SitupActivity : AppCompatActivity() {
                                 println(shoulder_y)
                                 print(history.takeLast(1))
                                 if((history.size == 0) || (shoulder_y != history.takeLast(1)[0])){
+                                    num_frames_requirement = currentFps/3
                                     history.add(shoulder_y)
                                     history = history.takeLast(num_frames_requirement).toMutableList()
                                     if(history.size >= num_frames_requirement){

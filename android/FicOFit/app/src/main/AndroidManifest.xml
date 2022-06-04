@@ -13,17 +13,18 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.FicoFit">
         <activity
+            android:name=".EndlessRunnerActivity"
+            android:exported="false"
+            android:theme="@style/Theme.AppCompat.NoActionBar"
+            android:screenOrientation="portrait"/>
+        <activity
             android:name=".PushupActivity"
             android:exported="false"
-            android:theme="@style/Theme.AppCompat.NoActionBar"/>
-<!--            android:screenOrientation="landscape" -->
-
+            android:theme="@style/Theme.AppCompat.NoActionBar" /> <!-- android:screenOrientation="landscape" -->
         <activity
             android:name=".SitupActivity"
             android:exported="false"
-            android:theme="@style/Theme.AppCompat.NoActionBar"/>
-        <!--            android:screenOrientation="landscape" -->
-
+            android:theme="@style/Theme.AppCompat.NoActionBar" /> <!-- android:screenOrientation="landscape" -->
         <activity
             android:name=".MainActivity"
             android:exported="true">

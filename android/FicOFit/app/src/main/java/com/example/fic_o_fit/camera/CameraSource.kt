@@ -41,7 +41,6 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.*
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
-import android.util.DisplayMetrics
 
 class CameraSource(
     private val surfaceView: SurfaceView,
@@ -105,7 +104,8 @@ class CameraSource(
                 }
                 yuvConverter.yuvToRgb(image, imageBitmap)
                 val rotateMatrix = Matrix()
-                rotateMatrix.postRotate(90.0f)
+                rotateMatrix.postScale(1f, -1f, PREVIEW_WIDTH / 2f, PREVIEW_HEIGHT / 2f)
+                rotateMatrix.postRotate(-90.0f)  // if the camera is back-facing, change this to 90.0f
 
                 val rotatedBitmap = Bitmap.createBitmap(
                     imageBitmap, 0, 0, PREVIEW_WIDTH, PREVIEW_HEIGHT,
@@ -166,9 +166,10 @@ class CameraSource(
             if (cameraDirection != null &&
                 cameraDirection == CameraCharacteristics.LENS_FACING_FRONT
             ) {
-                continue
+                this.cameraId = cameraId
+//                continue
             }
-            this.cameraId = cameraId
+//            this.cameraId = cameraId
         }
     }
 
@@ -256,10 +257,12 @@ class CameraSource(
 
     private fun visualize(poses: List<Pose>, bitmap: Bitmap) {
 
-        val outputBitmap = VisualizationUtils.drawBodyKeypoints(
-            bitmap,
-            poses.filter { it.score > MIN_CONFIDENCE }
-        )
+//        val outputBitmap = VisualizationUtils.drawBodyKeypoints(
+//            bitmap,
+//            poses.filter { it.score > MIN_CONFIDENCE }
+//        )
+
+        val outputBitmap = bitmap
 
         val holder = surfaceView.holder
         val surfaceCanvas = holder.lockCanvas()

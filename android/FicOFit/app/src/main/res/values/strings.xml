@@ -3,6 +3,8 @@
     <string name="title_activity_pushup">PushupActivity</string>
     <string name="pushup_count">Push Up: %s</string>
     <string name="situp_count">Sit Up: %s</string>
+    <string name="current_points">XP: %s</string>
+    <string name="high_score">High Score: %s</string>
     <string name="FPS_status">FPS: %s</string>
     <string name="tfe_pe_request_permission">This app needs camera permission</string>
 </resources>
