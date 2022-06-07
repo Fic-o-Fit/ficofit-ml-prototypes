@@ -13,10 +13,12 @@ import android.os.Bundle;
 import android.os.Process
 import android.os.SystemClock
 import android.view.*
+import android.widget.FrameLayout
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.DialogFragment
+import androidx.fragment.app.FragmentContainerView
 import androidx.lifecycle.lifecycleScope
 import com.badlogic.gdx.backends.android.AndroidApplicationConfiguration
 
@@ -29,6 +31,10 @@ import com.example.fic_o_fit.models.CalisthenicsClassifier
 import com.example.fic_o_fit.models.PoseEstimator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import android.util.DisplayMetrics
+
+
+
 
 class EndlessRunnerActivity : FragmentActivity(), AndroidFragmentApplication.Callbacks {
 
@@ -48,8 +54,9 @@ class EndlessRunnerActivity : FragmentActivity(), AndroidFragmentApplication.Cal
 
     private lateinit var tvCurrentPoints: TextView
     private lateinit var tvHighScore: TextView
-
+    private lateinit var tvTotalPoints: TextView
     private lateinit var svEndlessRunner: SurfaceView
+    private lateinit var flGameContent: FrameLayout
 
     private var cameraSource: CameraSource? = null
     private val requestPermissionLauncher =
@@ -71,6 +78,27 @@ class EndlessRunnerActivity : FragmentActivity(), AndroidFragmentApplication.Cal
 
         tvCurrentPoints = findViewById(R.id.tvCurrentPoints)
         tvHighScore = findViewById(R.id.tvHighScore)
+        tvTotalPoints = findViewById(R.id.tvTotalPoints)
+        svEndlessRunner = findViewById(R.id.svEndlessRunner)
+        flGameContent = findViewById(R.id.gameContent)
+
+        val displayMetrics = DisplayMetrics()
+        windowManager.defaultDisplay.getMetrics(displayMetrics)
+        val screenHeight = displayMetrics.heightPixels
+        val screenWidth = displayMetrics.widthPixels
+        println(screenHeight)
+        println(screenWidth)
+
+//        val flParams: ViewGroup.LayoutParams = flGameContent.layoutParams
+//        flParams.width = screenWidth
+//        flParams.height = screenHeight - (screenWidth * 3 / 5)
+//        flGameContent.layoutParams = flParams
+//
+//        val svParams: ViewGroup.LayoutParams = svEndlessRunner.layoutParams
+//        svParams.width = screenWidth
+//        svParams.height = screenWidth * 3 / 5
+//        flGameContent.layoutParams = svParams
+
 
         // replace frame layout's content with libgdx endless runner game
         endlessRunnerFragment = GameFragment()
@@ -79,7 +107,6 @@ class EndlessRunnerActivity : FragmentActivity(), AndroidFragmentApplication.Cal
         trans.commit();
 
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        svEndlessRunner = findViewById(R.id.svEndlessRunner)
         if (!isCameraPermissionGranted()) {
             requestPermission()
         }
@@ -95,30 +122,15 @@ class EndlessRunnerActivity : FragmentActivity(), AndroidFragmentApplication.Cal
     // Create a Class that extends AndroidFragmentApplication which is the Fragment implementation for libGDX.
     class GameFragment : AndroidFragmentApplication()
     {
-        val endlessRunner = EndlessRunner()
+        val game = EndlessRunner()
 
         // Add the initializeForView() code in the Fragment's onCreateView method.
         override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
             val config = AndroidApplicationConfiguration()
 
-            return initializeForView(endlessRunner, config);
+            return initializeForView(game, config);
         }
 
-        fun triggerJump(){
-            endlessRunner.triggerJump()
-        }
-
-        fun getTotalPoints(): Int{
-            return endlessRunner.totalPoints
-        }
-
-        fun getCurrentPoints(): Int{
-            return endlessRunner.currentPoints
-        }
-
-        fun getHighScore(): Int{
-            return endlessRunner.highScore
-        }
     }
 
     override fun exit() {}
@@ -148,9 +160,9 @@ class EndlessRunnerActivity : FragmentActivity(), AndroidFragmentApplication.Cal
     }
 
     private fun updateScores(){
-        totalPoints = endlessRunnerFragment.getTotalPoints()
-        currentPoints = endlessRunnerFragment.getCurrentPoints()
-        highScore = endlessRunnerFragment.getHighScore()
+        totalPoints = endlessRunnerFragment.game.getTotalPoints()
+        currentPoints = endlessRunnerFragment.game.getCurrentPoints()
+        highScore = endlessRunnerFragment.game.getHighScore()
     }
 
     private fun bodyIsVisible(pose: Pose): Boolean{
@@ -205,19 +217,31 @@ class EndlessRunnerActivity : FragmentActivity(), AndroidFragmentApplication.Cal
                             poseIsCorrect: Boolean,
                             pose: Pose
                         ) {
-//                            tvCurrentPoints.text = getString(R.string.current_points, endlessRunnerFragment.getCurrentPoints().toString())
-//                            tvHighScore.text = getString(R.string.high_score, endlessRunnerFragment.getHighScore().toString())
+                            updateScores()
+                            this@EndlessRunnerActivity.runOnUiThread(java.lang.Runnable {
+                                tvCurrentPoints.text = getString(R.string.current_points, currentPoints.toString())
+                                tvHighScore.text = getString(R.string.high_score, highScore.toString())
+                                tvTotalPoints.text = getString(R.string.total_points, totalPoints.toString())
+                            })
 
-                            // ini buat test aja, untuk jump naikin tangan kiri
 
-                            val wristY = (pose.keypoints[BodyPart.RIGHT_WRIST.position].coordinate.y).toInt()
-                            if(pose.keypoints[BodyPart.RIGHT_WRIST.position].score > 0.2){
+                            // ini buat test aja
+
+                            val wristY = (pose.keypoints[BodyPart.NOSE.position].coordinate.y).toInt()
+                            if(pose.keypoints[BodyPart.NOSE.position].score > 0.2){
                                 hipHistory.add(wristY)
                             }
                             hipHistory = hipHistory.takeLast(5).toMutableList()
                             if(isIncreasing(hipHistory)){
-                                println("increase detected!!!")
-                                endlessRunnerFragment.triggerJump()
+                                if(lastJumpTime != null){
+                                    if((SystemClock.elapsedRealtime() - lastJumpTime!!) > 1000){ // it will have to wait at least 1 sec
+                                        lastJumpTime = SystemClock.elapsedRealtime()
+                                        endlessRunnerFragment.game.triggerJump()
+                                    }
+                                }else{
+                                    lastJumpTime = SystemClock.elapsedRealtime()
+                                    endlessRunnerFragment.game.triggerJump()
+                                }
                             }
 //                            if(bodyIsVisible(pose)){
 //                                shoulderY = (pose.keypoints[BodyPart.RIGHT_SHOULDER.position].coordinate.y).toInt()
@@ -236,11 +260,11 @@ class EndlessRunnerActivity : FragmentActivity(), AndroidFragmentApplication.Cal
 //                                        if(lastJumpTime != null){
 //                                            if((SystemClock.elapsedRealtime() - lastJumpTime!!) > 1000){ // it will have to wait at least 1 sec
 //                                                lastJumpTime = SystemClock.elapsedRealtime()
-//                                                endlessRunnerFragment.triggerJump()
+//                                                endlessRunnerFragment.game.triggerJump()
 //                                            }
 //                                        }else{
 //                                            lastJumpTime = SystemClock.elapsedRealtime()
-//                                            endlessRunnerFragment.triggerJump()
+//                                            endlessRunnerFragment.game.triggerJump()
 //                                        }
 //                                    }
 //                                }

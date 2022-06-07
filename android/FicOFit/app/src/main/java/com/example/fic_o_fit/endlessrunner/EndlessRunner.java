@@ -11,9 +11,9 @@ import com.example.fic_o_fit.endlessrunner.screens.GameScreen;
 public class EndlessRunner extends Game {
 
 	private GameScreen screen;
-	public int totalPoints;
-	public int currentPoints;
-	public int highScore;
+	private int totalPoints;
+	private int currentPoints;
+	private int highScore;
 
 	@Override
 	public void create () {
@@ -28,18 +28,31 @@ public class EndlessRunner extends Game {
 		screen.stage.triggerJump();
 	}
 
+
+	public void setTotalPoints(int points){
+		totalPoints = points;
+	}
+
+	public int getTotalPoints(){
+		return totalPoints;
+	}
+
+	public void setCurrentPoints(int points){
+		currentPoints = points;
+	}
+
+	public int getCurrentPoints(){
+		return currentPoints;
+	}
+
 	public void updateHighScore(){
 		if(currentPoints > highScore){
 			highScore = currentPoints;
 		}
 	}
 
-//	public void addTotalPoints(int points){
-//		totalPoints += points;
-//	}
-//
-//	public int getTotalPoints(){
-//		return totalPoints;
-//	}
+	public int getHighScore(){
+		return highScore;
+	}
 
 }

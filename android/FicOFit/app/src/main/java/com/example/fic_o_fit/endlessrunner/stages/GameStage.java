@@ -10,7 +10,10 @@ import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.box2d.*;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.Scaling;
+import com.badlogic.gdx.utils.viewport.ScalingViewport;
 import com.example.fic_o_fit.endlessrunner.EndlessRunner;
+import com.example.fic_o_fit.endlessrunner.actors.Background;
 import com.example.fic_o_fit.endlessrunner.actors.Ground;
 import com.example.fic_o_fit.endlessrunner.actors.Runner;
 import com.example.fic_o_fit.endlessrunner.utils.BodyUtils;
@@ -41,6 +44,8 @@ public class GameStage extends Stage implements ContactListener{
     private Box2DDebugRenderer renderer;
 
     public GameStage(EndlessRunner endlessRunner) {
+        super(new ScalingViewport(Scaling.stretch, VIEWPORT_WIDTH, VIEWPORT_HEIGHT,
+                new OrthographicCamera(VIEWPORT_WIDTH, VIEWPORT_HEIGHT)));
         this.endlessRunner = endlessRunner;
         batch = new SpriteBatch();
         font = new BitmapFont();
@@ -52,13 +57,18 @@ public class GameStage extends Stage implements ContactListener{
 
     private void setUpWorld() {
         if(!gameOver){
-            endlessRunner.currentPoints = 0;
+            endlessRunner.setCurrentPoints(-1);
             world = WorldUtils.createWorld();
             world.setContactListener(this);
+//            setUpBackground();
             setUpGround();
             setUpRunner();
             createEnemy();
         }
+    }
+
+    private void setUpBackground() {
+        addActor(new Background());
     }
 
     private void setUpGround() {
@@ -116,7 +126,7 @@ public class GameStage extends Stage implements ContactListener{
 
     private void createEnemy() {
         Enemy enemy = new Enemy(WorldUtils.createEnemy(world));
-        addActor(enemy);
+//        addActor(enemy);
     }
 
     @Override
@@ -156,8 +166,12 @@ public class GameStage extends Stage implements ContactListener{
 
         } else if ((BodyUtils.bodyIsRunner(a) && BodyUtils.bodyIsGround(b)) ||
                 (BodyUtils.bodyIsGround(a) && BodyUtils.bodyIsRunner(b))) {
-            endlessRunner.currentPoints++;
-            endlessRunner.totalPoints++;
+            if(endlessRunner.getCurrentPoints() != -1){
+                endlessRunner.setTotalPoints(endlessRunner.getTotalPoints()+1);
+            }
+            endlessRunner.setCurrentPoints(endlessRunner.getCurrentPoints()+1);
+            endlessRunner.updateHighScore();
+
             runner.landed();
         }
 

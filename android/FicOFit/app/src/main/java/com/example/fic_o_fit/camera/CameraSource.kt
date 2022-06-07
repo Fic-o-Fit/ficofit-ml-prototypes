@@ -104,8 +104,8 @@ class CameraSource(
                 }
                 yuvConverter.yuvToRgb(image, imageBitmap)
                 val rotateMatrix = Matrix()
-                rotateMatrix.postScale(1f, -1f, PREVIEW_WIDTH / 2f, PREVIEW_HEIGHT / 2f)
-                rotateMatrix.postRotate(-90.0f)  // if the camera is back-facing, change this to 90.0f
+//                rotateMatrix.postScale(1f, -1f, PREVIEW_WIDTH / 2f, PREVIEW_HEIGHT / 2f)
+                rotateMatrix.postRotate(90.0f)  // if the camera is back-facing, change this to 90.0f
 
                 val rotatedBitmap = Bitmap.createBitmap(
                     imageBitmap, 0, 0, PREVIEW_WIDTH, PREVIEW_HEIGHT,
@@ -166,10 +166,10 @@ class CameraSource(
             if (cameraDirection != null &&
                 cameraDirection == CameraCharacteristics.LENS_FACING_FRONT
             ) {
-                this.cameraId = cameraId
-//                continue
+//                this.cameraId = cameraId
+                continue
             }
-//            this.cameraId = cameraId
+            this.cameraId = cameraId
         }
     }
 
