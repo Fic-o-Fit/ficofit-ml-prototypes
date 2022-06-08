@@ -43,7 +43,7 @@ class EndlessRunnerActivity : FragmentActivity(), AndroidFragmentApplication.Cal
     private var shoulderHistory = mutableListOf<Int>()
     private var hipHistory = mutableListOf<Int>()
     private var numFramesRequirement:Int = 5
-    private var currentFps: Int = 20  // default to 20
+    private var currentFps: Int = 15
     private var lastJumpTime: Long? = null
     private var shoulderY = 0
     private var hipY = 0
@@ -57,6 +57,9 @@ class EndlessRunnerActivity : FragmentActivity(), AndroidFragmentApplication.Cal
     private lateinit var tvTotalPoints: TextView
     private lateinit var svEndlessRunner: SurfaceView
     private lateinit var flGameContent: FrameLayout
+
+    private var screenHeight : Int = 0
+    private var screenWidth : Int = 0
 
     private var cameraSource: CameraSource? = null
     private val requestPermissionLauncher =
@@ -84,24 +87,24 @@ class EndlessRunnerActivity : FragmentActivity(), AndroidFragmentApplication.Cal
 
         val displayMetrics = DisplayMetrics()
         windowManager.defaultDisplay.getMetrics(displayMetrics)
-        val screenHeight = displayMetrics.heightPixels
-        val screenWidth = displayMetrics.widthPixels
+        screenHeight = displayMetrics.heightPixels
+        screenWidth = displayMetrics.widthPixels
         println(screenHeight)
         println(screenWidth)
 
-//        val flParams: ViewGroup.LayoutParams = flGameContent.layoutParams
-//        flParams.width = screenWidth
-//        flParams.height = screenHeight - (screenWidth * 3 / 5)
-//        flGameContent.layoutParams = flParams
-//
-//        val svParams: ViewGroup.LayoutParams = svEndlessRunner.layoutParams
-//        svParams.width = screenWidth
-//        svParams.height = screenWidth * 3 / 5
-//        flGameContent.layoutParams = svParams
+        val svParams: ViewGroup.LayoutParams = svEndlessRunner.layoutParams
+        svParams.width = screenWidth
+        svParams.height = screenHeight - (screenWidth * 3 / 5)
+        svEndlessRunner.layoutParams = svParams
+
+        val flParams: ViewGroup.LayoutParams = flGameContent.layoutParams
+        flParams.width = screenWidth
+        flParams.height = screenWidth * 3 / 5
+        flGameContent.layoutParams = flParams
 
 
         // replace frame layout's content with libgdx endless runner game
-        endlessRunnerFragment = GameFragment()
+        endlessRunnerFragment = GameFragment(screenWidth)
         val trans: FragmentTransaction = getSupportFragmentManager().beginTransaction()
         trans.replace(R.id.gameContent, endlessRunnerFragment)
         trans.commit();
@@ -120,9 +123,9 @@ class EndlessRunnerActivity : FragmentActivity(), AndroidFragmentApplication.Cal
     }
 
     // Create a Class that extends AndroidFragmentApplication which is the Fragment implementation for libGDX.
-    class GameFragment : AndroidFragmentApplication()
+    class GameFragment(screenWidth: Int) : AndroidFragmentApplication()
     {
-        val game = EndlessRunner()
+        val game = EndlessRunner(screenWidth)
 
         // Add the initializeForView() code in the Fragment's onCreateView method.
         override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -166,9 +169,9 @@ class EndlessRunnerActivity : FragmentActivity(), AndroidFragmentApplication.Cal
     }
 
     private fun bodyIsVisible(pose: Pose): Boolean{
-        val importantBodyparts = intArrayOf(5, 11)  // shoulder and knee
+        val importantBodyparts = intArrayOf(5, 11)  // shoulder and hip
         for(i in importantBodyparts){
-            if((pose.keypoints[i].score < 0.2f) && (pose.keypoints[i+1].score < 0.2f)){
+            if((pose.keypoints[i].score < 0.25f) || (pose.keypoints[i+1].score < 0.25f)){
                 return false
             }
         }
@@ -177,19 +180,22 @@ class EndlessRunnerActivity : FragmentActivity(), AndroidFragmentApplication.Cal
 
     private fun isJumping(shoulderArr: List<Int>, hipArr: List<Int>): Boolean{
 
-        val ratio = 2.0f
+        val ratio = 3.0f
 
         val startTorsoLength = -(shoulderArr[0] - hipArr[0])
         val endTorsoLength = -(shoulderArr[shoulderArr.size-1] - hipArr[hipArr.size-1])
 
         val shoulderDisplacement = -(shoulderArr[shoulderArr.size-1] - shoulderArr[0])
 
-        if ((shoulderDisplacement >= startTorsoLength/ratio) && (shoulderDisplacement >= endTorsoLength/ratio)){
+        val shoulderIsIncreasing = isIncreasing(shoulderArr.takeLast(3))
+
+        if ((shoulderDisplacement >= startTorsoLength/ratio) && (shoulderDisplacement >= endTorsoLength/ratio) && shoulderIsIncreasing){
             return true
         }
 
         return false
     }
+
 
     fun isIncreasing(arr: List<Int>): Boolean{
         var true_count = 0
@@ -210,7 +216,7 @@ class EndlessRunnerActivity : FragmentActivity(), AndroidFragmentApplication.Cal
                     CameraSource(svEndlessRunner, object : CameraSource.CameraSourceListener {
                         override fun onFPSListener(fps: Int) {
                             currentFps = fps
-//                            tvFPS.text = getString(R.string.FPS_status, fps.toString())
+
                         }
 
                         override fun onDetectedInfo(
@@ -227,48 +233,52 @@ class EndlessRunnerActivity : FragmentActivity(), AndroidFragmentApplication.Cal
 
                             // ini buat test aja
 
-                            val wristY = (pose.keypoints[BodyPart.NOSE.position].coordinate.y).toInt()
-                            if(pose.keypoints[BodyPart.NOSE.position].score > 0.2){
-                                hipHistory.add(wristY)
-                            }
-                            hipHistory = hipHistory.takeLast(5).toMutableList()
-                            if(isIncreasing(hipHistory)){
-                                if(lastJumpTime != null){
-                                    if((SystemClock.elapsedRealtime() - lastJumpTime!!) > 1000){ // it will have to wait at least 1 sec
-                                        lastJumpTime = SystemClock.elapsedRealtime()
-                                        endlessRunnerFragment.game.triggerJump()
-                                    }
-                                }else{
-                                    lastJumpTime = SystemClock.elapsedRealtime()
-                                    endlessRunnerFragment.game.triggerJump()
-                                }
-                            }
-//                            if(bodyIsVisible(pose)){
-//                                shoulderY = (pose.keypoints[BodyPart.RIGHT_SHOULDER.position].coordinate.y).toInt()
-//                                hipY = (pose.keypoints[BodyPart.RIGHT_SHOULDER.position].coordinate.y).toInt()
-//
-//                                shoulderHistory.add(shoulderY)
-//                                hipHistory.add(hipY)
-//                                shoulderHistory = shoulderHistory.takeLast(numFramesRequirement).toMutableList()
-//                                hipHistory = hipHistory.takeLast(numFramesRequirement).toMutableList()
-//
-//                                if((shoulderHistory.size == hipHistory.size) && (shoulderHistory.size >= numFramesRequirement)){
-//                                    numFramesRequirement = currentFps/3
-//                                    println("determining jump action")
-//
-//                                    if(isJumping(shoulderHistory, hipHistory)){
-//                                        if(lastJumpTime != null){
-//                                            if((SystemClock.elapsedRealtime() - lastJumpTime!!) > 1000){ // it will have to wait at least 1 sec
-//                                                lastJumpTime = SystemClock.elapsedRealtime()
-//                                                endlessRunnerFragment.game.triggerJump()
-//                                            }
-//                                        }else{
-//                                            lastJumpTime = SystemClock.elapsedRealtime()
-//                                            endlessRunnerFragment.game.triggerJump()
-//                                        }
+//                            val wristY = (pose.keypoints[BodyPart.NOSE.position].coordinate.y).toInt()
+//                            if(pose.keypoints[BodyPart.NOSE.position].score > 0.2){
+//                                hipHistory.add(wristY)
+//                            }
+//                            hipHistory = hipHistory.takeLast(5).toMutableList()
+//                            if(isIncreasing(hipHistory)){
+//                                if(lastJumpTime != null){
+//                                    if((SystemClock.elapsedRealtime() - lastJumpTime!!) > 1000){ // it will have to wait at least 1 sec
+//                                        lastJumpTime = SystemClock.elapsedRealtime()
+//                                        endlessRunnerFragment.game.triggerJump()
 //                                    }
+//                                }else{
+//                                    lastJumpTime = SystemClock.elapsedRealtime()
+//                                    endlessRunnerFragment.game.triggerJump()
 //                                }
 //                            }
+
+                            if(bodyIsVisible(pose)){
+                                if(currentFps < 5){
+                                    numFramesRequirement = 5
+                                }else{
+                                    numFramesRequirement = currentFps
+                                }
+
+                                shoulderY = (pose.keypoints[BodyPart.RIGHT_SHOULDER.position].coordinate.y).toInt()
+                                hipY = (pose.keypoints[BodyPart.RIGHT_HIP.position].coordinate.y).toInt()
+
+                                shoulderHistory.add(shoulderY)
+                                hipHistory.add(hipY)
+                                shoulderHistory = shoulderHistory.takeLast(numFramesRequirement).toMutableList()
+                                hipHistory = hipHistory.takeLast(numFramesRequirement).toMutableList()
+
+                                if((shoulderHistory.size == hipHistory.size) and (shoulderHistory.size >= numFramesRequirement)){
+                                    if(isJumping(shoulderHistory, hipHistory)){
+                                        if(lastJumpTime != null){
+                                            if((SystemClock.elapsedRealtime() - lastJumpTime!!) > 1000){ // it will have to wait at least 1 sec
+                                                lastJumpTime = SystemClock.elapsedRealtime()
+                                                endlessRunnerFragment.game.triggerJump()
+                                            }
+                                        }else{
+                                            lastJumpTime = SystemClock.elapsedRealtime()
+                                            endlessRunnerFragment.game.triggerJump()
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }).apply {
                         prepareCamera()

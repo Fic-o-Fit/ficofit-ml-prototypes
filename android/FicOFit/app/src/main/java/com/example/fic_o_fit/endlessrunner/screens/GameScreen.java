@@ -9,13 +9,21 @@ import com.example.fic_o_fit.endlessrunner.stages.GameStage;
 public class GameScreen implements Screen {
 
     public GameStage stage;
+    private final EndlessRunner endlessRunner;
 
     public GameScreen(EndlessRunner endlessRunner) {
+        this.endlessRunner = endlessRunner;
         stage = new GameStage(endlessRunner);
     }
 
     @Override
     public void render(float delta) {
+        if(stage.gameOver && stage.restart){
+            stage.gameOver = false;
+            stage.restart = false;
+            stage.dispose();
+            stage = new GameStage(endlessRunner);
+        }
         Gdx.gl.glClearColor(255/255f, 255/255f, 255/255f, 1);
 
         //Clear the screen

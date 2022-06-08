@@ -29,6 +29,7 @@ import android.hardware.camera2.CameraManager
 import android.media.ImageReader
 import android.os.Handler
 import android.os.HandlerThread
+import android.util.DisplayMetrics
 import android.util.Log
 import android.view.Surface
 import android.view.SurfaceView
@@ -48,7 +49,7 @@ class CameraSource(
 ) {
 
     companion object {
-        private const val PREVIEW_WIDTH = 640
+        private const val PREVIEW_WIDTH = 720
         private const val PREVIEW_HEIGHT = 480
         private const val MIN_CONFIDENCE = 0.5f
         private const val TAG = "Camera Source"
@@ -104,8 +105,8 @@ class CameraSource(
                 }
                 yuvConverter.yuvToRgb(image, imageBitmap)
                 val rotateMatrix = Matrix()
-//                rotateMatrix.postScale(1f, -1f, PREVIEW_WIDTH / 2f, PREVIEW_HEIGHT / 2f)
-                rotateMatrix.postRotate(90.0f)  // if the camera is back-facing, change this to 90.0f
+                rotateMatrix.postScale(1f, -1f, PREVIEW_WIDTH / 2f, PREVIEW_HEIGHT / 2f)
+                rotateMatrix.postRotate(-90.0f)  // if the camera is back-facing, change this to 90.0f
 
                 val rotatedBitmap = Bitmap.createBitmap(
                     imageBitmap, 0, 0, PREVIEW_WIDTH, PREVIEW_HEIGHT,
@@ -166,10 +167,10 @@ class CameraSource(
             if (cameraDirection != null &&
                 cameraDirection == CameraCharacteristics.LENS_FACING_FRONT
             ) {
-//                this.cameraId = cameraId
-                continue
+                this.cameraId = cameraId
+//                continue
             }
-            this.cameraId = cameraId
+//            this.cameraId = cameraId
         }
     }
 
@@ -257,12 +258,12 @@ class CameraSource(
 
     private fun visualize(poses: List<Pose>, bitmap: Bitmap) {
 
-//        val outputBitmap = VisualizationUtils.drawBodyKeypoints(
-//            bitmap,
-//            poses.filter { it.score > MIN_CONFIDENCE }
-//        )
+        val outputBitmap = VisualizationUtils.drawBodyKeypoints(
+            bitmap,
+            poses.filter { it.score > MIN_CONFIDENCE }
+        )
 
-        val outputBitmap = bitmap
+//        val outputBitmap = bitmap
 
         val holder = surfaceView.holder
         val surfaceCanvas = holder.lockCanvas()

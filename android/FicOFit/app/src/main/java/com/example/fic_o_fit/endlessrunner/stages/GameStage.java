@@ -1,9 +1,12 @@
 package com.example.fic_o_fit.endlessrunner.stages;
 
+import android.os.SystemClock;
+
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector3;
@@ -24,24 +27,29 @@ import com.example.fic_o_fit.endlessrunner.actors.Enemy;
 public class GameStage extends Stage implements ContactListener{
 
     // This will be our viewport measurements while working with the debug renderer
-    private static final int VIEWPORT_WIDTH = 20;
-    private static final int VIEWPORT_HEIGHT = 13;
+    private static final int VIEWPORT_WIDTH = 800;
+    private static final int VIEWPORT_HEIGHT = 480;
 
     private World world;
     private Ground ground;
     private Runner runner;
-    private boolean gameOver;
+    public boolean gameOver;
+    public boolean restart;
 
     private EndlessRunner endlessRunner;
 //    private int userPoints;
     private SpriteBatch batch;
     private BitmapFont font;
 
+    private long startWaitingForEnemy = 0;
+
     private final float TIME_STEP = 1 / 300f;
     private float accumulator = 0f;
 
     private OrthographicCamera camera;
     private Box2DDebugRenderer renderer;
+
+    private long gameOverTime = 0;
 
     public GameStage(EndlessRunner endlessRunner) {
         super(new ScalingViewport(Scaling.stretch, VIEWPORT_WIDTH, VIEWPORT_HEIGHT,
@@ -50,17 +58,20 @@ public class GameStage extends Stage implements ContactListener{
         batch = new SpriteBatch();
         font = new BitmapFont();
         gameOver = false;
+        restart = false;
         setUpWorld();
         setupCamera();
-        renderer = new Box2DDebugRenderer();
+//        waitToStart();
+//        renderer = new Box2DDebugRenderer();
     }
+
 
     private void setUpWorld() {
         if(!gameOver){
             endlessRunner.setCurrentPoints(-1);
             world = WorldUtils.createWorld();
             world.setContactListener(this);
-//            setUpBackground();
+            setUpBackground();
             setUpGround();
             setUpRunner();
             createEnemy();
@@ -108,9 +119,13 @@ public class GameStage extends Stage implements ContactListener{
 
         //TODO: Implement interpolation
         if(runner.isHit()){
+            gameOverTime = SystemClock.elapsedRealtime();
             gameOver = true;
             batch.begin();
-            font.draw(batch, "Game Over", 200, 200);
+            font.getData().setScale(10, 10);
+            GlyphLayout glyphLayout = new GlyphLayout();
+            glyphLayout.setText(font, "Game Over");
+            font.draw(batch, glyphLayout, (VIEWPORT_WIDTH - glyphLayout.width)/2, (VIEWPORT_HEIGHT - glyphLayout.height)/2);
             batch.end();
         }
     }
@@ -118,25 +133,35 @@ public class GameStage extends Stage implements ContactListener{
     private void update(Body body) {
         if (!BodyUtils.bodyInBounds(body)) {
             if (BodyUtils.bodyIsEnemy(body) && !runner.isHit()) {
-                createEnemy();
+                if(startWaitingForEnemy == 0){
+                    startWaitingForEnemy = SystemClock.elapsedRealtime();
+                }
+                else if((SystemClock.elapsedRealtime() - startWaitingForEnemy) > 800){
+                    startWaitingForEnemy = 0;
+                    createEnemy();
+                    world.destroyBody(body);
+                }
+            }else{
+                world.destroyBody(body);
             }
-            world.destroyBody(body);
         }
     }
 
     private void createEnemy() {
         Enemy enemy = new Enemy(WorldUtils.createEnemy(world));
-//        addActor(enemy);
+        addActor(enemy);
     }
 
     @Override
     public void draw() {
         super.draw();
-        renderer.render(world, camera.combined);
+//        renderer.render(world, camera.combined);
     }
 
     public void triggerJump() {
         if (gameOver){
+            batch.dispose();
+
             Array<Body> bodies = new Array<Body>(world.getBodyCount());
             world.getBodies(bodies);
 
@@ -146,8 +171,12 @@ public class GameStage extends Stage implements ContactListener{
 
             endlessRunner.updateHighScore();
 
-            gameOver = false;
-            setUpWorld();
+            restart = true;
+
+//                gameOver = false;
+
+//                setUpWorld();
+
         }else{
             runner.jump();
         }

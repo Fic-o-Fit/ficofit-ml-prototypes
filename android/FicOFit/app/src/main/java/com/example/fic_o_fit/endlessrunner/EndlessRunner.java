@@ -7,6 +7,7 @@ import com.badlogic.gdx.graphics.g2d.Batch;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.example.fic_o_fit.endlessrunner.screens.GameScreen;
+import com.example.fic_o_fit.endlessrunner.utils.Constants;
 
 public class EndlessRunner extends Game {
 
@@ -14,6 +15,11 @@ public class EndlessRunner extends Game {
 	private int totalPoints;
 	private int currentPoints;
 	private int highScore;
+	private final int screenWidth;
+
+	public EndlessRunner(int screenWidth){
+		this.screenWidth = screenWidth;
+	}
 
 	@Override
 	public void create () {
@@ -53,6 +59,10 @@ public class EndlessRunner extends Game {
 
 	public int getHighScore(){
 		return highScore;
+	}
+
+	public int getScreenWidth() {
+		return screenWidth;
 	}
 
 }

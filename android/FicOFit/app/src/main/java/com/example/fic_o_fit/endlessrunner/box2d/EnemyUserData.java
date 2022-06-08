@@ -7,11 +7,13 @@ import com.example.fic_o_fit.endlessrunner.utils.Constants;
 public class EnemyUserData extends UserData {
 
     private Vector2 linearVelocity;
+    private String filepath;
 
-    public EnemyUserData(float width, float height) {
+    public EnemyUserData(float width, float height, String filepath) {
         super(width, height);
         userDataType = UserDataType.ENEMY;
         linearVelocity = Constants.ENEMY_LINEAR_VELOCITY;
+        this.filepath = filepath;
     }
 
     public void setLinearVelocity(Vector2 linearVelocity) {
@@ -20,6 +22,10 @@ public class EnemyUserData extends UserData {
 
     public Vector2 getLinearVelocity() {
         return linearVelocity;
+    }
+
+    public String getFilepath() {
+        return filepath;
     }
 
 }

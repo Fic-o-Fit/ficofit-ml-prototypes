@@ -17,13 +17,14 @@ public class WorldUtils {
     }
 
     public static Body createGround(World world) {
+        int GROUND_WIDTH = 800;
         BodyDef bodyDef = new BodyDef();
         bodyDef.position.set(new Vector2(Constants.GROUND_X, Constants.GROUND_Y));
         Body body = world.createBody(bodyDef);
         PolygonShape shape = new PolygonShape();
-        shape.setAsBox(Constants.GROUND_WIDTH / 2, Constants.GROUND_HEIGHT / 2);
+        shape.setAsBox(GROUND_WIDTH / 2, Constants.GROUND_HEIGHT / 2);
         body.createFixture(shape, Constants.GROUND_DENSITY);
-        body.setUserData(new GroundUserData());
+        body.setUserData(new GroundUserData(GROUND_WIDTH, Constants.GROUND_HEIGHT));
         shape.dispose();
         return body;
     }
@@ -53,7 +54,7 @@ public class WorldUtils {
         Body body = world.createBody(bodyDef);
         body.createFixture(shape, enemyType.getDensity());
         body.resetMassData();
-        EnemyUserData userData = new EnemyUserData(enemyType.getWidth(), enemyType.getHeight());
+        EnemyUserData userData = new EnemyUserData(enemyType.getWidth(), enemyType.getHeight(), enemyType.getFilepath());
         body.setUserData(userData);
         shape.dispose();
         return body;
